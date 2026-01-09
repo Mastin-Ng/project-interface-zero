@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Loader2, BrainCircuit, Check, Sparkles, AlertTriangle, FileCode, Zap, Layout, FileJson, ArrowRight, Code2, RotateCcw } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 import { GoogleGenAI, Type } from "@google/genai";
+import { useLanguage } from '../contexts/LanguageContext';
 
 const GEMINI_MODEL = 'gemini-3-flash-preview';
 
@@ -180,10 +181,12 @@ const DemoFlow: React.FC<DemoFlowProps> = ({ onExit }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  const { t, language } = useLanguage();
+
   const steps = [
-    { id: 1, label: 'Input Entity', icon: FileCode },
-    { id: 2, label: 'Generated Assets', icon: FileJson },
-    { id: 3, label: 'Live Preview', icon: Zap }
+    { id: 1, label: t.demo.step1, icon: FileCode },
+    { id: 2, label: t.demo.step2, icon: FileJson },
+    { id: 3, label: t.demo.step3, icon: Zap }
   ];
 
   const handleTranspile = async () => {
@@ -195,6 +198,12 @@ const DemoFlow: React.FC<DemoFlowProps> = ({ onExit }) => {
         if (!apiKey) throw new Error("API Key configuration error.");
 
         const ai = new GoogleGenAI({ apiKey });
+        
+        // Add language-specific instruction for the designRationale
+        const langInstruction = language === 'zh' 
+            ? "CRITICAL: The 'designRationale' field MUST be in Traditional Chinese (繁體中文)."
+            : "The 'designRationale' field MUST be in English.";
+
         const response = await ai.models.generateContent({
             model: GEMINI_MODEL,
             contents: `Transpile this C# Entity into:
@@ -206,6 +215,7 @@ const DemoFlow: React.FC<DemoFlowProps> = ({ onExit }) => {
             - Modern, clean card layout (or table if appropriate).
             - **CRITICAL**: Action buttons (e.g., "View Details", "Play Now", "Edit") MUST be positioned at the absolute bottom of their container card (use flex-col and mt-auto on the button wrapper).
             - Use semantic colors for status and badges.
+            - ${langInstruction}
 
             C# Code:
             ${csharpCode}`,
@@ -254,7 +264,6 @@ const DemoFlow: React.FC<DemoFlowProps> = ({ onExit }) => {
         const parsed = JSON.parse(cleanedText);
         
         // Critical Fix: Remove hallucinated JSON keys leaking into the React Code string
-        // This handles cases where the model generates: "reactComponentCode": "... code ... };","designRationale": "..."
         if (parsed.reactComponentCode && typeof parsed.reactComponentCode === 'string') {
             const leakagePatterns = ['","designRationale"', '", "designRationale"', '","layoutStrategy"'];
             for (const pattern of leakagePatterns) {
@@ -296,8 +305,8 @@ const DemoFlow: React.FC<DemoFlowProps> = ({ onExit }) => {
             <div className="absolute inset-0 bg-tech-blue/30 blur-xl rounded-full"></div>
             <BrainCircuit size={80} className="text-tech-blue mb-8 animate-bounce relative z-10" />
         </div>
-        <h2 className="text-2xl font-bold mb-4 tracking-tight text-white">AI Reasoning in Progress...</h2>
-        <p className="text-slate-400">Constructing types, mock data, and visual components.</p>
+        <h2 className="text-2xl font-bold mb-4 tracking-tight text-white">{t.demo.processing_title}</h2>
+        <p className="text-slate-400">{t.demo.processing_desc}</p>
     </div>
   );
 
@@ -307,7 +316,7 @@ const DemoFlow: React.FC<DemoFlowProps> = ({ onExit }) => {
             <div>
                 <h2 className="text-2xl font-bold flex items-center gap-3">
                     <Check className="text-tech-green" size={24} />
-                    {result.className} Synced
+                    {result.className} {t.demo.synced}
                 </h2>
                 <p className="text-slate-400 text-sm mt-1 max-w-3xl leading-relaxed">{result.designRationale}</p>
             </div>
@@ -318,7 +327,7 @@ const DemoFlow: React.FC<DemoFlowProps> = ({ onExit }) => {
                     className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm transition-colors border border-slate-700 flex items-center gap-2 text-slate-300 hover:text-white"
                 >
                     <RotateCcw size={14} />
-                    New Entity
+                    {t.demo.btn_new_entity}
                 </button>
             </div>
         </div>
@@ -336,11 +345,11 @@ const DemoFlow: React.FC<DemoFlowProps> = ({ onExit }) => {
                 onClick={onExit}
                 className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
             >
-                <ArrowLeft size={20} /> Back to Proposal
+                <ArrowLeft size={20} /> {t.demo.back}
             </button>
             <div className="flex items-center gap-2 text-tech-cyan">
                 <Sparkles size={20} />
-                <span className="font-bold tracking-widest uppercase text-sm">Interface Zero Sandbox</span>
+                <span className="font-bold tracking-widest uppercase text-sm">{t.demo.sandbox_title}</span>
             </div>
         </div>
 
@@ -395,24 +404,24 @@ const DemoFlow: React.FC<DemoFlowProps> = ({ onExit }) => {
                             <div className="p-4 bg-tech-blue/10 border border-tech-blue/30 rounded-lg shrink-0">
                                 <h3 className="text-lg font-bold mb-2 flex items-center gap-2 text-tech-cyan">
                                     <Sparkles size={18} />
-                                    Intelligence Layer
+                                    {t.demo.intel_title}
                                 </h3>
                                 <p className="text-sm text-slate-400 leading-relaxed max-w-sm">
-                                    Our engine uses Gemini 3.0 to understand backend semantics. It doesn't just copy names; it infers intent to create pixel-perfect frontend scaffolding.
+                                    {t.demo.intel_desc}
                                 </p>
                             </div>
                             <ul className="grid md:grid-cols-3 gap-4 text-slate-400 text-sm flex-1">
                                 <li className="flex gap-3 items-start bg-slate-900/50 p-3 rounded-lg border border-slate-800">
                                     <div className="mt-1 w-1.5 h-1.5 rounded-full bg-tech-blue shrink-0" />
-                                    <span>Zero-config mapping from C# <code>List&lt;T&gt;</code> to TS arrays.</span>
+                                    <span>{t.demo.intel_p1}</span>
                                 </li>
                                 <li className="flex gap-3 items-start bg-slate-900/50 p-3 rounded-lg border border-slate-800">
                                     <div className="mt-1 w-1.5 h-1.5 rounded-full bg-tech-blue shrink-0" />
-                                    <span>Semantic data mocking (e.g., matching "Url" to image endpoints).</span>
+                                    <span>{t.demo.intel_p2}</span>
                                 </li>
                                 <li className="flex gap-3 items-start bg-slate-900/50 p-3 rounded-lg border border-slate-800">
                                     <div className="mt-1 w-1.5 h-1.5 rounded-full bg-tech-blue shrink-0" />
-                                    <span>Dynamic UI strategy selection (Gallery vs Table).</span>
+                                    <span>{t.demo.intel_p3}</span>
                                 </li>
                             </ul>
                         </div>
@@ -422,7 +431,7 @@ const DemoFlow: React.FC<DemoFlowProps> = ({ onExit }) => {
                     <div className="space-y-4">
                         <h2 className="text-2xl font-bold flex items-center gap-3">
                             <FileCode className="text-tech-blue" />
-                            1. Target C# Structure
+                            {t.demo.input_title}
                         </h2>
                         <div className="relative group">
                             <div className="absolute -inset-0.5 bg-gradient-to-r from-tech-blue to-tech-cyan rounded-xl blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
@@ -439,7 +448,7 @@ const DemoFlow: React.FC<DemoFlowProps> = ({ onExit }) => {
                                 title="Reset to Default"
                             >
                                 <RotateCcw size={14} />
-                                Reset
+                                {t.demo.btn_reset}
                             </button>
                         </div>
                         <button 
@@ -448,7 +457,7 @@ const DemoFlow: React.FC<DemoFlowProps> = ({ onExit }) => {
                             className="w-full py-4 bg-tech-blue hover:bg-blue-600 rounded-xl font-bold flex items-center justify-center gap-3 transition-all disabled:opacity-50 shadow-lg shadow-blue-500/20 text-white"
                         >
                             <BrainCircuit size={20} />
-                            Initiate Transpilation
+                            {t.demo.btn_transpile}
                         </button>
                     </div>
                 </div>
@@ -461,14 +470,14 @@ const DemoFlow: React.FC<DemoFlowProps> = ({ onExit }) => {
                     <div className="grid lg:grid-cols-2 gap-8">
                          <div className="glass-panel rounded-2xl border border-slate-800 flex flex-col overflow-hidden h-[500px]">
                             <div className="px-4 py-2 border-b border-slate-800 bg-slate-900/50 text-[10px] font-mono text-slate-400 uppercase tracking-widest flex justify-between items-center">
-                                <span>TypeScript Interface</span>
+                                <span>{t.demo.ts_interface}</span>
                                 <span className="text-tech-cyan">.d.ts</span>
                             </div>
                             <pre className="flex-1 p-4 overflow-auto font-mono text-[11px] text-tech-cyan leading-relaxed">{generated.tsCode}</pre>
                         </div>
                         <div className="glass-panel rounded-2xl border border-slate-800 flex flex-col overflow-hidden h-[500px]">
                             <div className="px-4 py-2 border-b border-slate-800 bg-slate-900/50 text-[10px] font-mono text-slate-400 uppercase tracking-widest flex justify-between items-center">
-                                <span>Mock JSON Body</span>
+                                <span>{t.demo.mock_json}</span>
                                 <span className="text-tech-green">.json</span>
                             </div>
                             <pre className="flex-1 p-4 overflow-auto font-mono text-[11px] text-tech-green leading-relaxed">{generated.jsonCode}</pre>
@@ -480,7 +489,7 @@ const DemoFlow: React.FC<DemoFlowProps> = ({ onExit }) => {
                             onClick={() => setStep(3)}
                             className="px-8 py-3 bg-tech-blue hover:bg-blue-600 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-blue-500/20 transition-all hover:scale-105"
                         >
-                            Run Live Preview <ArrowRight size={20} />
+                            {t.demo.btn_run_live} <ArrowRight size={20} />
                         </button>
                     </div>
                 </div>
@@ -495,7 +504,7 @@ const DemoFlow: React.FC<DemoFlowProps> = ({ onExit }) => {
                         <div className="px-4 py-2 border-b border-slate-800 bg-slate-900/50 flex justify-between items-center">
                             <div className="flex items-center gap-2">
                                 <div className="w-2 h-2 rounded-full bg-tech-green animate-pulse" />
-                                <span className="text-[10px] font-mono text-slate-400 uppercase tracking-widest">Runtime Renderer</span>
+                                <span className="text-[10px] font-mono text-slate-400 uppercase tracking-widest">{t.demo.runtime_renderer}</span>
                             </div>
                             <div className="flex items-center gap-3">
                                 <span className="text-[9px] bg-tech-blue/20 text-tech-blue border border-tech-blue/30 px-2 py-0.5 rounded uppercase font-bold">{generated.layoutStrategy}</span>
@@ -511,7 +520,7 @@ const DemoFlow: React.FC<DemoFlowProps> = ({ onExit }) => {
                         <div className="px-4 py-2 border-b border-slate-800 bg-slate-900/50 text-[10px] font-mono text-slate-400 uppercase tracking-widest flex justify-between items-center">
                             <div className="flex items-center gap-2">
                                 <Code2 size={14} className="text-tech-blue" />
-                                <span>Generated UI Code</span>
+                                <span>{t.demo.generated_ui}</span>
                             </div>
                             <span className="text-tech-blue">.tsx</span>
                         </div>
